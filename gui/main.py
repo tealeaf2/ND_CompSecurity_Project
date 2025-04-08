@@ -32,13 +32,19 @@ def process_data():
     output_text.delete("1.0", tk.END)
     output_text.insert(tk.END, result)
 
-# TODO: UPDATE THIS FUNCTION TO ALLOW OTHER FILETYPES (IMAGES/BINARIES) BUT NOT IF VIGENERE IS SELECTED
 def upload_file():
-    file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+    algorithm = algorithm_var.get()
+    if algorithm == "Vigenere":
+        file_types = [("Text files", "*.txt")]
+    else:
+        file_types = [("Text files", "*.txt"), ("Image files", "*.png;*.jpg;*.jpeg"), ("Binary files", "*.bin")]
+    file_path = filedialog.askopenfilename(filetypes=file_types)
     if file_path:
-        with open(file_path, "r") as file:
-            input_text.delete("1.0", tk.END)
-            input_text.insert(tk.END, file.read())
+        with open(file_path, "rb") as file:
+            text = file.read()
+            #text = file.read().hex() # TODO: Not sure if we should read images and stuff in hex
+        input_text.delete("1.0", tk.END)
+        input_text.insert(tk.END, text)
 
 def upload_key():
     file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
