@@ -184,25 +184,34 @@ def triple_des_block(data_block, key1, key2, key3, encrypt=True):
 
     return step3
 
-def triple_des_encrypt(data, key1, key2, key3):
+def triple_des_encrypt(data, key):
+    if isinstance(key, str):
+        key = key.encode()
+    if isinstance(data, str):
+        data = data.encode()
     data = pad(data)
     blocks = [data[i:i+8] for i in range(0, len(data), 8)]
     result = b''
 
     for block in blocks:
         binary_block = bytes_to_binary(block)
-        encrypted_block = triple_des_block(binary_block, key1, key2, key3, True)
+        encrypted_block = triple_des_block(binary_block, key[0:8], key[8:16], key[16:24], True)
         result += binary_to_bytes(encrypted_block)
 
     return result
 
-def triple_des_decrypt(data, key1, key2, key3):
+def triple_des_decrypt(data, key):
+    if isinstance(key, str):
+        key = key.encode()
+    if isinstance(data, str):
+        #Assume it's in hex
+        data = bytes.fromhex(data)
     blocks = [data[i:i+8] for i in range(0, len(data), 8)]
     result = b''
 
     for block in blocks:
         binary_block = bytes_to_binary(block)
-        encrypted_block = triple_des_block(binary_block, key1, key2, key3, False)
+        encrypted_block = triple_des_block(binary_block, key[0:8], key[8:16], key[16:24], False)
         result += binary_to_bytes(encrypted_block)
 
     return unpad(result)
@@ -210,16 +219,14 @@ def triple_des_decrypt(data, key1, key2, key3):
 
 if __name__ == "__main__":
 
-    key1 = b'Key1Key1'
-    key2 = b'Key2Key2'   
-    key3 = b'Key3Key3'
+    key = 'Key1Key1Key2Key2Key3Key3'
 
     plaintext = "This is a test message for 3DES!"
     plaintext_bytes = plaintext.encode()
 
-    ciphertext = triple_des_encrypt(plaintext_bytes, key1, key2, key3)
+    ciphertext = triple_des_encrypt(plaintext_bytes, key)
     print("Encrypted (hex):", ciphertext.hex())
 
-    decrypted_bytes = triple_des_decrypt(ciphertext, key1, key2, key3)
+    decrypted_bytes = triple_des_decrypt(ciphertext, key)
     decrypted = decrypted_bytes.decode()
     print("Decrypted:", decrypted)

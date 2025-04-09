@@ -6,11 +6,21 @@ from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decr
 
 def placeholder_encrypt(data, algorithm, key):
     #TODO: IMPLEMENT THE CORRECT ALGORITHM
-    return f"Encrypted({data}) with {algorithm} using key {key}"
+    if algorithm == "Vigenere":
+        return encode_vigenere(key, data)
+    elif algorithm == "3DES":
+        return triple_des_encrypt(data, key).hex()
+    else:
+        return f"Encrypted({data}) with {algorithm} using key {key}"
 
 def placeholder_decrypt(data, algorithm, key):
     #TODO: IMPLEMENT THE CORRECT ALGORITHM
-    return f"Decrypted({data}) with {algorithm} using key {key}"
+    if algorithm == "Vigenere":
+        return decode_vigenere(key, data)
+    elif algorithm == "3DES":
+        return triple_des_decrypt(data, key)
+    else:
+        return f"Decrypted({data}) with {algorithm} using key {key}"
 
 def process_data():
     data = input_text.get("1.0", tk.END).strip()
@@ -24,6 +34,10 @@ def process_data():
 
     if not key:
         messagebox.showwarning("Warning", "Please enter or upload a key.")
+        return
+    
+    if algorithm == "3DES" and len(key) != 24:
+        messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
         return
     
     if operation == "Encrypt":
