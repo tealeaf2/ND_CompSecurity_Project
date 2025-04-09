@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 #TODO: IMPORT ALGORITHMS
+from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
+from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
 
 def placeholder_encrypt(data, algorithm, key):
     #TODO: IMPLEMENT THE CORRECT ALGORITHM
