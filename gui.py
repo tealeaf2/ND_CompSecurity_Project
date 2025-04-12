@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox, scrolledtext
 #TODO: IMPORT ALGORITHMS
 from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
 from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
+from algorithms.aes.aes import aes_encrypt, aes_decrypt
 
 def placeholder_encrypt(data, algorithm, key):
     #TODO: IMPLEMENT THE CORRECT ALGORITHM
@@ -10,6 +11,8 @@ def placeholder_encrypt(data, algorithm, key):
         return encode_vigenere(key, data)
     elif algorithm == "3DES":
         return triple_des_encrypt(data, key).hex()
+    elif algorithm == "AES":
+        return aes_encrypt(data, key)
     else:
         return f"Encrypted({data}) with {algorithm} using key {key}"
 
@@ -19,6 +22,8 @@ def placeholder_decrypt(data, algorithm, key):
         return decode_vigenere(key, data)
     elif algorithm == "3DES":
         return triple_des_decrypt(data, key)
+    elif algorithm == "AES":
+        return aes_decrypt(data, key)
     else:
         return f"Decrypted({data}) with {algorithm} using key {key}"
 
@@ -39,6 +44,8 @@ def process_data():
     if algorithm == "3DES" and len(key) != 24:
         messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
         return
+    elif algorithm == "AES" and len(key) != 16:
+        messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
     
     if operation == "Encrypt":
         result = placeholder_encrypt(data, algorithm, key)
