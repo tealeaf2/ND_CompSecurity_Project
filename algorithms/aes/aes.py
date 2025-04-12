@@ -1,6 +1,8 @@
 import sys
-from mapping import s_box, inv_s_box, r_con
+import os
+sys.path.append(os.path.dirname(__file__))
 
+from mapping import s_box, inv_s_box, r_con
 
 """
 All helper functions for the steps of encryption and decryption
@@ -234,27 +236,47 @@ def decrypt_block(Nr, ciphertext, key):
 
 
 # Functions to call
-def encrypt(Nr, plaintext, key):
+def aes_encrypt(plaintext, key):
+    """
+    Parameters:
+        Nr (int)
+        plaintext (str)
+        key (str)
+    """
     padded = pad(plaintext.encode('utf-8'))
+
+    # Hardcoded for now
+    Nr = 10
 
     encrypted_blocks = []
     for block in split_blocks(padded):
         encrypted_blocks.append(encrypt_block(Nr, block, key))
 
     ciphertext = b''.join(encrypted_blocks)
-    print(ciphertext.hex())
-    return ciphertext
+    # print(ciphertext.hex())
+    return ciphertext.hex()
 
 
-def decrypt(Nr, ciphertext, key):
+def aes_decrypt(ciphertext, key):
+    """
+    Parameters:
+        Nr (int)
+        ciphertext (string, in hex)
+        key (str)
+    """
+    binary_ciphertext = bytes.fromhex(ciphertext)
+
+    # Hardcoded for now
+    Nr = 10
+
     decrypted_blocks = []
-    for block in split_blocks(ciphertext):
+    for block in split_blocks(binary_ciphertext):
         decrypted_blocks.append(decrypt_block(Nr, block, key))
 
     decrypted_padded = b''.join(decrypted_blocks)
     unpadded = unpad(decrypted_padded)
 
-    print(unpadded.decode('utf-8'))
+    # print(unpadded.decode('utf-8'))
     return unpadded.decode('utf-8')
 
 
@@ -265,10 +287,9 @@ def main():
     """
     plaintext = "example1234567891011111101010101"
     key = "thisisakey123456"
-    Nr = 10  # Number of rounds for AES-128
 
-    ciphertext = encrypt(Nr, plaintext, key)
-    res = decrypt(Nr, ciphertext, key)
+    ciphertext = aes_encrypt(plaintext, key)
+    res = aes_decrypt(ciphertext, key)
 
 
 if __name__ == '__main__':
