@@ -63,23 +63,34 @@ def inv_mix_columns(s):
 
     mix_columns(s)
 
- 
-"""
-For preprocessing
-"""
-def transform_to_state(plaintext):
-  """
-  Convert a 16-byte array to a 4x4 AES state matrix.
-  """
-  text_bytes = plaintext.encode('utf-8')
 
-  state = [[0] * 4 for _ in range(4)]
-  for i in range(16):
-    row = i % 4
-    col = i // 4
-    state[row][col] = text_bytes[i]
+"""
+Support for padding input to fit as 16 sized blocks
+"""
+def pad(plaintext):
+    """
+    Pads the given plaintext with PKCS#7 padding to a multiple of 16 bytes.
+    Note that if the plaintext size is a multiple of 16,
+    a whole block will be added.
+    """
+    padding_len = 16 - (len(plaintext) % 16)
+    padding = bytes([padding_len] * padding_len)
+    return plaintext + padding
 
-  return state
+def unpad(plaintext):
+    """
+    Removes a PKCS#7 padding, returning the unpadded text and ensuring the
+    padding was correct.
+    """
+    padding_len = plaintext[-1]
+    assert padding_len > 0
+    message, padding = plaintext[:-padding_len], plaintext[-padding_len:]
+    assert all(p == padding_len for p in padding)
+    return message
+
+def split_blocks(message, block_size=16, require_padding=True):
+        assert len(message) % block_size == 0 or not require_padding
+        return [message[i:i+16] for i in range(0, len(message), block_size)]
 
 
 """
@@ -119,8 +130,8 @@ def key_expansion(n_rounds, master_key):
             word[0] ^= r_con[i]
             i += 1
 
-        elif len(master_key) == 32 and len(key_columns) % iteration_size == 4:
-            word = [s_box[b] for b in word]
+        # elif len(master_key) == 32 and len(key_columns) % iteration_size == 4:
+        #     word = [s_box[b] for b in word]
 
         word = xor_bytes(word, key_columns[-iteration_size])
         key_columns.append(word)
@@ -130,7 +141,7 @@ def key_expansion(n_rounds, master_key):
 
 
 
-def encrypt(Nr, plaintext, key):
+def encrypt_block(Nr, plaintext, key):
     '''
     Encryption:
 
@@ -152,7 +163,7 @@ def encrypt(Nr, plaintext, key):
     Ciphertext (16 bytes)
     '''
     assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes."
-    state = transform_to_state(plaintext)
+    state = bytes2matrix(plaintext)
 
     k_in_bytes = key.encode('utf-8')
     assert len(k_in_bytes) == 16, "Key must be exactly 16 bytes."
@@ -172,16 +183,11 @@ def encrypt(Nr, plaintext, key):
     shift_rows(state)
     add_round_key(state, round_keys[Nr])
 
-    # Flattening the 4x4 matrix
-    ciphertext = []
-    for col in range(4):
-        for row in range(4):
-            ciphertext.append(state[row][col])
-    return ciphertext
+    return matrix2bytes(state)
 
 
 
-def decrypt(Nr, ciphertext, key):
+def decrypt_block(Nr, ciphertext, key):
     '''
     Decryption:
 
@@ -204,11 +210,7 @@ def decrypt(Nr, ciphertext, key):
             ↓
     Plaintext (16 bytes)
     '''
-    state = [[0] * 4 for _ in range(4)]
-    for i in range(16):
-        row = i % 4
-        col = i // 4
-        state[row][col] = ciphertext[i]
+    state = bytes2matrix(ciphertext)
 
     k_in_bytes = key.encode('utf-8')
     assert len(k_in_bytes) == 16, "Key must be exactly 16 bytes."
@@ -228,29 +230,45 @@ def decrypt(Nr, ciphertext, key):
     inv_shift_rows(state)
     add_round_key(state, round_keys[0])
 
-    # Convert state to plaintext (flatten the 4x4 state matrix)
-    plaintext = []
-    for col in range(4):
-        for row in range(4):
-            plaintext.append(state[row][col])
+    return matrix2bytes(state)
 
-    return plaintext
+
+# Functions to call
+def encrypt(Nr, plaintext, key):
+    padded = pad(plaintext.encode('utf-8'))
+
+    encrypted_blocks = []
+    for block in split_blocks(padded):
+        encrypted_blocks.append(encrypt_block(Nr, block, key))
+
+    ciphertext = b''.join(encrypted_blocks)
+    print(ciphertext.hex())
+    return ciphertext
+
+
+def decrypt(Nr, ciphertext, key):
+    decrypted_blocks = []
+    for block in split_blocks(ciphertext):
+        decrypted_blocks.append(decrypt_block(Nr, block, key))
+
+    decrypted_padded = b''.join(decrypted_blocks)
+    unpadded = unpad(decrypted_padded)
+
+    print(unpadded.decode('utf-8'))
+    return unpadded.decode('utf-8')
+
 
 
 def main():
-    plaintext = "example123456789"
+    """
+    Current implementation supports AES-128 and ECB mode with PKCS#7 padding.
+    """
+    plaintext = "example1234567891011111101010101"
     key = "thisisakey123456"
+    Nr = 10  # Number of rounds for AES-128
 
-    Nr = 10 # Number of rounds for AES-128
-
-    encrypted_text = encrypt(Nr, plaintext, key)
-    ciphertext = ''.join(f'{b:02x}' for b in encrypted_text)
-    print(ciphertext)
-
-    ciphertext_bytes = bytes.fromhex(ciphertext)
-
-    decrypted_text = decrypt(Nr, ciphertext_bytes, key)
-    print(''.join(chr(b) for b in decrypted_text))
+    ciphertext = encrypt(Nr, plaintext, key)
+    res = decrypt(Nr, ciphertext, key)
 
 
 if __name__ == '__main__':
