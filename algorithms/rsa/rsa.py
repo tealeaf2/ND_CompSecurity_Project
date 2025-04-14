@@ -29,11 +29,11 @@ def find_coprimes(number):
 
 def encrypt(message, public_key):
   e, n = public_key
-  return [pow(ord(char), e, n) for char in message]
+  return [pow(ord(char)-65, e, n) for char in message]
 
 def decrypt(ciphertext, private_key):
   d, n = private_key
-  return ''.join([chr(pow(char, d, n)) for char in ciphertext])
+  return ''.join([chr(pow(char, d, n)+65) for char in ciphertext])
 
 def main():
   try:
@@ -45,8 +45,10 @@ def main():
       raise ValueError("Both numbers must be prime.")
     if p == q:
       raise ValueError("p and q must be different.")
+    '''    
     if p*q <=127:
       raise ValueError("p*q must be greater than 127")
+    '''
 
     n = p * q
     phi = (p - 1) * (q - 1)
