@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox, scrolledtext
 from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
 from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
 from algorithms.aes.aes import aes_encrypt, aes_decrypt
+import time
 
 def placeholder_encrypt(data, algorithm, key):
     #TODO: IMPLEMENT THE CORRECT ALGORITHM
@@ -116,5 +117,108 @@ output_text = scrolledtext.ScrolledText(root, height=5)
 output_text.pack(fill=tk.BOTH, padx=10, pady=5)
 
 tk.Button(root, text="Download Output", command=download_file).pack()
+tk.Label(root, text="Data Metrics:").pack()
+metrics_frame = tk.Frame(root)
+metrics_frame.pack(fill=tk.BOTH, padx=10, pady=5)
 
+tk.Label(metrics_frame, text="Input Size").grid(row=0, column=0, padx=5, pady=5)
+tk.Label(metrics_frame, text="Key Size").grid(row=0, column=1, padx=5, pady=5)
+tk.Label(metrics_frame, text="Output Size").grid(row=0, column=2, padx=5, pady=5)
+output_size_label = tk.Label(metrics_frame, text="0")
+output_size_label.grid(row=1, column=2, padx=5, pady=5)
+
+def process_data():
+    data = input_text.get("1.0", tk.END).strip()
+    key = key_text.get("1.0", tk.END).strip()
+    algorithm = algorithm_var.get()
+    operation = operation_var.get()
+    
+    if not data:
+        messagebox.showwarning("Warning", "Please enter some data or upload a file.")
+        return
+
+    if not key:
+        messagebox.showwarning("Warning", "Please enter or upload a key.")
+        return
+    
+    if algorithm == "3DES" and len(key) != 24:
+        messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
+        return
+    elif algorithm == "AES" and len(key) != 16:
+        messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
+    
+    start_time = time.time()
+    if operation == "Encrypt":
+        result = placeholder_encrypt(data, algorithm, key)
+    else:
+        result = placeholder_decrypt(data, algorithm, key)
+    end_time = time.time()
+    
+    execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
+    execution_time_label.config(text=f"{execution_time:.2f} ms")
+    
+    output_text.delete("1.0", tk.END)
+    output_text.insert(tk.END, result)
+    
+    # Update output size
+    output_size = len(result)
+    output_size_label.config(text=str(output_size))
+tk.Label(metrics_frame, text="Execution Time").grid(row=0, column=3, padx=5, pady=5)
+
+input_size_label = tk.Label(metrics_frame, text="0")
+input_size_label.grid(row=1, column=0, padx=5, pady=5)
+
+key_size_label = tk.Label(metrics_frame, text="0")
+key_size_label.grid(row=1, column=1, padx=5, pady=5)
+
+output_size_label = tk.Label(metrics_frame, text="0")
+output_size_label.grid(row=1, column=2, padx=5, pady=5)
+
+execution_time_label = tk.Label(metrics_frame, text="0 ms")
+execution_time_label.grid(row=1, column=3, padx=5, pady=5)
+
+def process_data():
+    data = input_text.get("1.0", tk.END).strip()
+    key = key_text.get("1.0", tk.END).strip()
+    algorithm = algorithm_var.get()
+    operation = operation_var.get()
+    
+    if not data:
+        messagebox.showwarning("Warning", "Please enter some data or upload a file.")
+        return
+
+    if not key:
+        messagebox.showwarning("Warning", "Please enter or upload a key.")
+        return
+    
+    if algorithm == "3DES" and len(key) != 24:
+        messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
+        return
+    elif algorithm == "AES" and len(key) != 16:
+        messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
+    
+    start_time = time.time()
+    if operation == "Encrypt":
+        result = placeholder_encrypt(data, algorithm, key)
+    else:
+        result = placeholder_decrypt(data, algorithm, key)
+    end_time = time.time()
+    
+    execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
+    execution_time_label.config(text=f"{execution_time:.2f} ms")
+    
+    output_text.delete("1.0", tk.END)
+    output_text.insert(tk.END, result)
+
+def update_metrics():
+    input_size = len(input_text.get("1.0", tk.END).strip())
+    key_size = len(key_text.get("1.0", tk.END).strip())
+    output_size = len(output_text.get("1.0", tk.END).strip())
+    input_size_label.config(text=str(input_size))
+    key_size_label.config(text=str(key_size))
+    output_size_label.config(text=str(output_size))
+
+input_text.bind("<KeyRelease>", lambda event: update_metrics())
+key_text.bind("<KeyRelease>", lambda event: update_metrics())
+output_text.bind("<KeyRelease>", lambda event: update_metrics())
 root.mainloop()
