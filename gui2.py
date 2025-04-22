@@ -5,74 +5,90 @@ from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decr
 from algorithms.aes.aes import aes_encrypt, aes_decrypt
 import time
 
+input_is_bytes = False
+output_is_bytes = False
+raw_input_data = b''
+raw_output_data = b''
+
 def placeholder_encrypt(data, algorithm, key):
     if algorithm == "Vigenere":
-        return encode_vigenere(key, data)
+        return encode_vigenere(key, data.decode('utf-8'))
     elif algorithm == "3DES":
-        return triple_des_encrypt(data, key).hex()
+        return triple_des_encrypt(data, key)
     elif algorithm == "AES":
         return aes_encrypt(data, key)
     else:
-        return f"Encrypted({data}) with {algorithm} using key {key}"
+        return b""
 
 def placeholder_decrypt(data, algorithm, key):
     if algorithm == "Vigenere":
-        return decode_vigenere(key, data)
+        return decode_vigenere(key, data.decode('utf-8'))
     elif algorithm == "3DES":
         return triple_des_decrypt(data, key)
     elif algorithm == "AES":
         return aes_decrypt(data, key)
     else:
-        return f"Decrypted({data}) with {algorithm} using key {key}"
+        return b""
 
 def process_data():
-    data = input_text.get("1.0", tk.END).strip()
+    global raw_input_data, input_is_bytes, raw_output_data, output_is_bytes
     key = key_text.get("1.0", tk.END).strip()
     algorithm = algorithm_var.get()
     operation = operation_var.get()
-    
-    if not data:
-        messagebox.showwarning("Warning", "Please enter some data or upload a file.")
-        return
+
+    if not raw_input_data:
+        text_data = input_text.get("1.0", tk.END).strip()
+        if not text_data:
+            messagebox.showwarning("Warning", "Please enter some data or upload a file.")
+            return
+        raw_input_data = text_data.encode()
+        input_is_bytes = False
 
     if not key:
         messagebox.showwarning("Warning", "Please enter or upload a key.")
         return
-    
+
     if algorithm == "3DES" and len(key) != 24:
         messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
         return
     elif algorithm == "AES" and len(key) != 16:
         messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
-    
+        return
+
     start_time = time.time()
     if operation == "Encrypt":
-        result = placeholder_encrypt(data, algorithm, key)
+        result = placeholder_encrypt(raw_input_data, algorithm, key)
     else:
-        result = placeholder_decrypt(data, algorithm, key)
+        result = placeholder_decrypt(raw_input_data, algorithm, key)
     end_time = time.time()
-    
-    execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
+
+    execution_time = (end_time - start_time) * 1000  # ms
     execution_time_label.config(text=f"{execution_time:.2f} ms")
-    
+
     output_text.delete("1.0", tk.END)
-    output_text.insert(tk.END, result)
+    if isinstance(result, bytes):
+        output_is_bytes = True
+        raw_output_data = result
+        output_text.insert(tk.END, result.hex())
+    else:
+        output_text.insert(tk.END, str(result))
 
     update_metrics()
 
 def upload_file():
+    global raw_input_data, input_is_bytes
     algorithm = algorithm_var.get()
+    file_types = [("All files", "*.*")]
     if algorithm == "Vigenere":
         file_types = [("Text files", "*.txt")]
-    else:
-        file_types = [("Text files", "*.txt"), ("Image files", "*.png;*.jpg;*.jpeg"), ("Binary files", "*.bin")]
+
     file_path = filedialog.askopenfilename(filetypes=file_types)
     if file_path:
         with open(file_path, "rb") as file:
-            text = file.read()
-            #text = file.read().hex() # TODO: Not sure if we should read images and stuff in hex
-        input_text.delete("1.0", tk.END)
-        input_text.insert(tk.END, text)
+            raw_input_data = file.read()
+            input_is_bytes = not file_path.endswith(".txt")
+            input_text.delete("1.0", tk.END)
+            input_text.insert(tk.END, raw_input_data.hex() if input_is_bytes else raw_input_data)
     update_metrics()
 
 def upload_key():
@@ -84,10 +100,16 @@ def upload_key():
     update_metrics()
 
 def download_file():
-    file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("All files", "*.*")])
+    global input_is_bytes, raw_output_data
+    file_path = filedialog.asksaveasfilename(defaultextension=".bin" if input_is_bytes else ".txt", filetypes=[("All files", "*.*")])
     if file_path:
-        with open(file_path, "w") as file:
-            file.write(output_text.get("1.0", tk.END).strip())
+        data = output_text.get("1.0", tk.END).strip()
+        if output_is_bytes:
+            with open(file_path, "wb") as file:
+                file.write(raw_output_data)
+        else:
+            with open(file_path, "w") as file:
+                file.write(data)
 
 def update_metrics():
     input_size = len(input_text.get("1.0", tk.END).strip())
@@ -95,9 +117,10 @@ def update_metrics():
     output_size = len(output_text.get("1.0", tk.END).strip())
     input_size_label.config(text=str(input_size))
     key_size_label.config(text=str(key_size))
-    output_size_label.config(text=str(output_size)) 
+    output_size_label.config(text=str(output_size))
 
 
+# --- GUI setup ---
 root = tk.Tk()
 root.title("Data Encryption/Decryption Tool")
 root.geometry("600x800")
@@ -118,13 +141,11 @@ algorithm_menu.pack(side=tk.LEFT, padx=10)
 tk.Label(root, text="Input Data:", font=HEADER_FONT, bg="#f5f5f5").pack(anchor="w", padx=10, pady=(10, 0))
 input_text = scrolledtext.ScrolledText(root, height=6, font=("Consolas", 10))
 input_text.pack(fill=tk.BOTH, padx=10, pady=5)
-
 tk.Button(root, text="Upload File", command=upload_file, font=BUTTON_FONT).pack(pady=(0, 10))
 
 tk.Label(root, text="Enter Key:", font=HEADER_FONT, bg="#f5f5f5").pack(anchor="w", padx=10)
 key_text = scrolledtext.ScrolledText(root, height=2, font=("Consolas", 10))
 key_text.pack(fill=tk.BOTH, padx=10, pady=5)
-
 tk.Button(root, text="Upload Key File", command=upload_key, font=BUTTON_FONT).pack(pady=(0, 10))
 
 operation_frame = tk.Frame(root, bg="#f5f5f5")
@@ -139,7 +160,6 @@ tk.Button(root, text="Process", command=process_data, bg="#4CAF50", fg="white", 
 tk.Label(root, text="Output:", font=HEADER_FONT, bg="#f5f5f5").pack(anchor="w", padx=10)
 output_text = scrolledtext.ScrolledText(root, height=6, font=("Consolas", 10))
 output_text.pack(fill=tk.BOTH, padx=10, pady=5)
-
 tk.Button(root, text="Download Output", command=download_file, font=BUTTON_FONT).pack(pady=10)
 
 tk.Label(root, text="Data Metrics:", font=HEADER_FONT, bg="#f5f5f5").pack(anchor="w", padx=10)
@@ -162,4 +182,5 @@ for i, label in enumerate([input_size_label, key_size_label, output_size_label, 
 input_text.bind("<KeyRelease>", lambda event: update_metrics())
 key_text.bind("<KeyRelease>", lambda event: update_metrics())
 output_text.bind("<KeyRelease>", lambda event: update_metrics())
+
 root.mainloop()
