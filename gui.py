@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox, scrolledtext
 from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
 from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
 from algorithms.aes.aes import aes_encrypt, aes_decrypt
+from algorithms.rsa.rsa import rsa_encrypt, rsa_decrypt, is_prime, gcd, find_coprimes, modinv
 import time
 
 def placeholder_encrypt(data, algorithm, key):
@@ -12,6 +13,9 @@ def placeholder_encrypt(data, algorithm, key):
         return triple_des_encrypt(data, key).hex()
     elif algorithm == "AES":
         return aes_encrypt(data, key)
+    elif algorithm == "RSA":
+        e,n = key[0], key[2]
+        return rsa_encrypt(data, (e,n))
     else:
         return f"Encrypted({data}) with {algorithm} using key {key}"
 
@@ -22,6 +26,9 @@ def placeholder_decrypt(data, algorithm, key):
         return triple_des_decrypt(data, key)
     elif algorithm == "AES":
         return aes_decrypt(data, key)
+    elif algorithm == "RSA":
+        d,n =key[1], key[2]
+        return rsa_decrypt(data,(d,n))
     else:
         return f"Decrypted({data}) with {algorithm} using key {key}"
 
@@ -44,7 +51,19 @@ def process_data():
         return
     elif algorithm == "AES" and len(key) != 16:
         messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
-    
+    elif algorithm == "RSA":
+        if len(key.split())!=3:
+            messagebox.showwarning("Warning", "Key must have 3 values to use RSA algorithm.")
+        p, q, e = list(map(int, key.split(" ")))
+        if not is_prime(p) or not is_prime(q):
+            messagebox.showwarning("Warning","p and q must both be prime")
+        n=p*q
+        phi = (p-1)*(q-1)    
+        if gcd(e, phi) != 1:
+            messagebox.showwarning("Warning",f"Selected private key must be coprime with phi ({phi})\n Examples: {" ".join(list(map(str,find_coprimes(phi))))}")
+        d = modinv(e,phi)
+        key = (e,d,n)
+        
     start_time = time.time()
     if operation == "Encrypt":
         result = placeholder_encrypt(data, algorithm, key)
