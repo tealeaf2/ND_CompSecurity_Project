@@ -27,11 +27,11 @@ def find_coprimes(number):
       break
   return coprimes
 
-def encrypt(message, public_key):
+def rsa_encrypt(message, public_key):
   e, n = public_key
   return [pow(ord(char)-65, e, n) for char in message]
 
-def decrypt(ciphertext, private_key):
+def rsa_decrypt(ciphertext, private_key):
   d, n = private_key
   return ''.join([chr(pow(char, d, n)+65) for char in ciphertext])
 
@@ -67,10 +67,10 @@ def main():
     print(f"Private key: (d = {d}, n = {n})")
 
     message = input("Enter message to encrypt: ")
-    cipher = encrypt(message, (e, n))
+    cipher = rsa_encrypt(message, (e, n))
     print(f"Encrypted: {cipher}")
 
-    plain = decrypt(cipher, (d, n))
+    plain = rsa_decrypt(cipher, (d, n))
     print(f"Decrypted: {plain}")
 
   except ValueError as ve:
