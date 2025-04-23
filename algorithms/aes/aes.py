@@ -167,10 +167,11 @@ def encrypt_block(Nr, plaintext, key):
     assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes."
     state = bytes2matrix(plaintext)
 
-    k_in_bytes = key.encode('utf-8')
-    assert len(k_in_bytes) == 16, "Key must be exactly 16 bytes."
+    if isinstance(key, str):
+        key = key.encode('utf-8')
+    assert len(key) == 16, "Key must be exactly 16 bytes."
 
-    round_keys = key_expansion(Nr, k_in_bytes)
+    round_keys = key_expansion(Nr, key)
     add_round_key(state, round_keys[0])
 
     # Round 1 - 9
@@ -214,10 +215,7 @@ def decrypt_block(Nr, ciphertext, key):
     '''
     state = bytes2matrix(ciphertext)
 
-    k_in_bytes = key.encode('utf-8')
-    assert len(k_in_bytes) == 16, "Key must be exactly 16 bytes."
-
-    round_keys = key_expansion(Nr, k_in_bytes)
+    round_keys = key_expansion(Nr, key)
     add_round_key(state, round_keys[Nr])
 
     # Main rounds (9 through 1)
@@ -240,10 +238,16 @@ def aes_encrypt(plaintext, key):
     """
     Parameters:
         Nr (int)
-        plaintext (str)
-        key (str)
+        plaintext (str/bytes)
+        key (str/bytes)
     """
-    padded = pad(plaintext.encode('utf-8'))
+    print(type(plaintext))
+    if isinstance(plaintext, str):
+        plaintext = plaintext.encode('utf-8')
+    if isinstance(key, str):
+        key = key.encode('utf-8')
+
+    padded = pad(plaintext)
 
     # Hardcoded for now
     Nr = 10
@@ -257,14 +261,21 @@ def aes_encrypt(plaintext, key):
     return ciphertext.hex()
 
 
-def aes_decrypt(ciphertext, key):
+def aes_decrypt(ciphertext, key, input_bytes = False):
     """
     Parameters:
         Nr (int)
-        ciphertext (string, in hex)
-        key (str)
+        ciphertext (string, in hex/bytes)
+        key (str/bytes)
     """
-    binary_ciphertext = bytes.fromhex(ciphertext)
+    print(type(ciphertext), ciphertext, input_bytes)
+    if isinstance(ciphertext, str):
+        binary_ciphertext = bytes.fromhex(ciphertext)
+    else:
+        binary_ciphertext = ciphertext
+
+    if isinstance(key, str):
+        key = key.encode('utf-8')
 
     # Hardcoded for now
     Nr = 10
@@ -277,7 +288,11 @@ def aes_decrypt(ciphertext, key):
     unpadded = unpad(decrypted_padded)
 
     # print(unpadded.decode('utf-8'))
-    return unpadded.decode('utf-8')
+    if input_bytes:
+        #print(unpadded.hex())
+        return unpadded.hex()
+    else:
+        return unpadded.decode('utf-8')
 
 
 
