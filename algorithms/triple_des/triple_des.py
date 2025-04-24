@@ -185,9 +185,11 @@ def triple_des_block(data_block, key1, key2, key3, encrypt=True):
     return step3
 
 def triple_des_encrypt(data, key):
+    s = False
     if isinstance(key, str):
         key = key.encode()
     if isinstance(data, str):
+        s = True
         data = data.encode()
     data = pad(data)
     blocks = [data[i:i+8] for i in range(0, len(data), 8)]
@@ -198,13 +200,15 @@ def triple_des_encrypt(data, key):
         encrypted_block = triple_des_block(binary_block, key[0:8], key[8:16], key[16:24], True)
         result += binary_to_bytes(encrypted_block)
 
-    return result
+    return result.hex() if s else result
 
 def triple_des_decrypt(data, key):
+    s = False
     if isinstance(key, str):
         key = key.encode()
     if isinstance(data, str):
         #Assume it's in hex
+        s = True
         data = bytes.fromhex(data)
     blocks = [data[i:i+8] for i in range(0, len(data), 8)]
     result = b''
@@ -214,7 +218,7 @@ def triple_des_decrypt(data, key):
         encrypted_block = triple_des_block(binary_block, key[0:8], key[8:16], key[16:24], False)
         result += binary_to_bytes(encrypted_block)
 
-    return unpad(result)
+    return unpad(result).decode() if s else unpad(result)
 
 
 if __name__ == "__main__":
@@ -222,11 +226,17 @@ if __name__ == "__main__":
     key = 'Key1Key1Key2Key2Key3Key3'
 
     plaintext = "This is a test message for 3DES!"
-    plaintext_bytes = plaintext.encode()
 
-    ciphertext = triple_des_encrypt(plaintext_bytes, key)
-    print("Encrypted (hex):", ciphertext.hex())
+    ciphertext = triple_des_encrypt(plaintext, key)
+    print("Encrypted (hex):", ciphertext)
 
-    decrypted_bytes = triple_des_decrypt(ciphertext, key)
-    decrypted = decrypted_bytes.decode()
+    decrypted = triple_des_decrypt(ciphertext, key)
+    print("Decrypted:", decrypted)
+
+    plaintext = b"This is a test message for 3DES!"
+
+    ciphertext = triple_des_encrypt(plaintext, key)
+    print("Encrypted (hex):", ciphertext)
+
+    decrypted = triple_des_decrypt(ciphertext, key)
     print("Decrypted:", decrypted)
