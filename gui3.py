@@ -1,7 +1,12 @@
 # libraries Import
 from tkinter import * 
 import customtkinter
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
+import time
+from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
+from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
+from algorithms.aes.aes import aes_encrypt, aes_decrypt
+from algorithms.rsa.rsa import rsa_encrypt, rsa_decrypt, is_prime, gcd, find_coprimes, modinv
 
 # Main Window Properties
 window = Tk()
@@ -15,26 +20,71 @@ output_file_data = None
 
 # Running the algorithm based on encryption or decryption
 def process():
+    global output_file_data
+    key = Entry_id13.get().strip()
+    data = selected_file_data if input_type_var.get() == 1 else Entry_id10.get().strip()
+
+    if not data:
+        messagebox.showwarning("Warning", "Please enter some data or upload a file.")
+        return
+
+    if not key:
+        messagebox.showwarning("Warning", "Please enter or upload a key.")
+        return
     
+    if selected_algorithm == "3DES" and len(key) != 24:
+        messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
+        return
+    elif selected_algorithm == "AES" and len(key) != 16:
+        messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
+    elif selected_algorithm == "RSA":
+        if len(key.split())!=3:
+            messagebox.showwarning("Warning", "Key must have 3 values to use RSA algorithm.")
+        p, q, e = list(map(int, key.split(" ")))
+        if not is_prime(p) or not is_prime(q):
+            messagebox.showwarning("Warning","p and q must both be prime")
+        n=p*q
+        phi = (p-1)*(q-1)    
+        if gcd(e, phi) != 1:
+            messagebox.showwarning("Warning",f"Selected private key must be coprime with phi ({phi})\n Examples: {" ".join(list(map(str,find_coprimes(phi))))}")
+        d = modinv(e,phi)
+        key = (e,d,n)
 
+    if operation_var.get() == 0:
+        if selected_algorithm == "Vigenere":
+            result = encode_vigenere(key, data)
+        elif selected_algorithm == "3DES":
+            result = triple_des_encrypt(data, key)
+        elif selected_algorithm == "AES":
+            result = aes_encrypt(data, key)
+        elif selected_algorithm == "RSA":
+            e,n = key[0], key[2]
+            result =  rsa_encrypt(data.decode('utf-8'), (e,n))
+        else:
+            result = "Failed to encrypt"
 
+    else:
+        if selected_algorithm == "Vigenere":
+            result = decode_vigenere(key, data)
+        elif selected_algorithm == "3DES":
+            result = triple_des_decrypt(data, key)
+        elif selected_algorithm == "AES":
+            result = aes_decrypt(data, key)
+        elif selected_algorithm == "RSA":
+            d,n = key[1], key[2]
+            result = rsa_decrypt(data.decode('utf-8'),(d,n))
+        else:
+            result = "Failed to decrypt"
+        
+    Entry_id18.delete(0, END)
+    Entry_id18.insert(0, result)
 
-
-
-
+    output_file_data = result
 
     if input_type_var.get() == 1:
         Button_download_output.place(x=170, y=360)
     else:
         Button_download_output.place_forget()
-
-
-
-
-
-
-
-
 
 
 # Track selected algorithm
@@ -49,7 +99,7 @@ def set_active(buttons, selected_name):
             button.configure(fg_color="#292929")  # Inactive color
     selected_algorithm.set(selected_name)
 
-    if selected_name == "Vinegere":
+    if selected_name == "Vigenere":
         for widget in window.winfo_children():
             if widget == RadioButton_id9:
                 widget.place_forget() 
@@ -164,7 +214,7 @@ sidebar_buttons["RSA"] = Button_id4
 
 Button_id5 = customtkinter.CTkButton(
     master=window,
-    text="Vinegere",
+    text="Vigenere",
     font=("Arial", 18),
     text_color="#fafafa",
     hover_color="#686868",
@@ -173,10 +223,10 @@ Button_id5 = customtkinter.CTkButton(
     border_width=0,
     corner_radius=0,
     fg_color="#292929",
-    command=lambda: set_active(sidebar_buttons, "Vinegere")
+    command=lambda: set_active(sidebar_buttons, "Vigenere")
 )
 Button_id5.place(x=0, y=450)
-sidebar_buttons["Vinegere"] = Button_id5
+sidebar_buttons["Vigenere"] = Button_id5
 
 # Other UI Elements
 input_type_var = IntVar(value=0)
