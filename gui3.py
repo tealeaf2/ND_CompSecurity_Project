@@ -2,7 +2,6 @@
 from tkinter import * 
 import customtkinter
 from tkinter import filedialog, messagebox
-import time
 from algorithms.vigenere.vigenere import encode_vigenere, decode_vigenere
 from algorithms.triple_des.triple_des import triple_des_encrypt, triple_des_decrypt
 from algorithms.aes.aes import aes_encrypt, aes_decrypt
@@ -21,23 +20,28 @@ output_file_data = None
 # Running the algorithm based on encryption or decryption
 def process():
     global output_file_data
-    key = Entry_id13.get().strip()
-    data = selected_file_data if input_type_var.get() == 1 else Entry_id10.get().strip()
+    key = Entry_id13.get("1.0", "end-1c")
+    data = selected_file_data if input_type_var.get() == 1 else Entry_id10.get("1.0", "end-1c")
+    algorithm = selected_algorithm.get()
+
+    print(data, key, input_type_var.get(), operation_var.get(), selected_algorithm.get())
 
     if not data:
         messagebox.showwarning("Warning", "Please enter some data or upload a file.")
         return
-
     if not key:
         messagebox.showwarning("Warning", "Please enter or upload a key.")
         return
-    
-    if selected_algorithm == "3DES" and len(key) != 24:
+    if not algorithm:
+        messagebox.showwarning("Warning", "Please select an algorithm.") 
+
+
+    if algorithm == "3DES" and len(key) != 24:
         messagebox.showwarning("Warning", "Key must be 24 characters long to use 3DES algorithm.")
         return
-    elif selected_algorithm == "AES" and len(key) != 16:
+    elif algorithm == "AES" and len(key) != 16:
         messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
-    elif selected_algorithm == "RSA":
+    elif algorithm == "RSA":
         if len(key.split())!=3:
             messagebox.showwarning("Warning", "Key must have 3 values to use RSA algorithm.")
         p, q, e = list(map(int, key.split(" ")))
@@ -51,33 +55,34 @@ def process():
         key = (e,d,n)
 
     if operation_var.get() == 0:
-        if selected_algorithm == "Vigenere":
+        if algorithm == "Vigenere":
             result = encode_vigenere(key, data)
-        elif selected_algorithm == "3DES":
+        elif algorithm == "3DES":
             result = triple_des_encrypt(data, key)
-        elif selected_algorithm == "AES":
+        elif algorithm == "AES":
             result = aes_encrypt(data, key)
-        elif selected_algorithm == "RSA":
+        elif algorithm == "RSA":
             e,n = key[0], key[2]
-            result =  rsa_encrypt(data.decode('utf-8'), (e,n))
+            result =  rsa_encrypt(data, (e,n))
         else:
             result = "Failed to encrypt"
-
     else:
-        if selected_algorithm == "Vigenere":
+        if algorithm == "Vigenere":
             result = decode_vigenere(key, data)
-        elif selected_algorithm == "3DES":
+        elif algorithm == "3DES":
             result = triple_des_decrypt(data, key)
-        elif selected_algorithm == "AES":
+        elif algorithm == "AES":
+
             result = aes_decrypt(data, key)
-        elif selected_algorithm == "RSA":
+        elif algorithm == "RSA":
             d,n = key[1], key[2]
-            result = rsa_decrypt(data.decode('utf-8'),(d,n))
+            parsed_data = [int(i) for i in data.split()]
+            result = rsa_decrypt(parsed_data ,(d,n))
         else:
             result = "Failed to decrypt"
         
-    Entry_id18.delete(0, END)
-    Entry_id18.insert(0, result)
+    Entry_id18.delete("1.0", "end")
+    Entry_id18.insert("1.0", result)
 
     output_file_data = result
 
@@ -103,20 +108,41 @@ def set_active(buttons, selected_name):
         for widget in window.winfo_children():
             if widget == RadioButton_id9:
                 widget.place_forget() 
+    # elif selected_name == "RSA":
+    #     for widget in window.winfo_children():
+    #         if widget in [Entry_id13]:
+    #             widget.place_forget()
+
+    #     Entry_id21.place(x=290, y=270)
+    #     Entry_id24.place(x=430, y=270)
+    #     Entry_id26.place(x=290, y=310)
+
+    #     Label_id22.place(x=260, y=270)
+    #     Label_id23.place(x=400, y=270)
+    #     Label_id25.place(x=260, y=310)
     else:
         RadioButton_id9.place(x=350, y=30)
+        Entry_id13.place(x=260, y=270)
+        # Entry_id21.place_forget()
+        # Entry_id24.place_forget()
+        # Entry_id26.place_forget()
+        # Label_id22.place_forget()
+        # Label_id23.place_forget()
+        # Label_id25.place_forget()
+
 
 def update_input_ui():
     for widget in window.winfo_children():
-        if isinstance(widget, customtkinter.CTkEntry) and widget != Entry_id13:
+        if isinstance(widget, customtkinter.CTkTextbox) and widget != Entry_id13:
             widget.place_forget()
         elif isinstance(widget, customtkinter.CTkButton) and widget.cget("text") == "Select File":
             widget.place_forget()
         elif isinstance(widget, customtkinter.CTkLabel) and widget == Label_file_name:
             widget.place_forget()
+
         
     if input_type_var.get() == 0:  # "Text" selected
-        Entry_id10.place(x=170, y=80)
+        Entry_id10.place(x=260, y=80)
         Entry_id18.place(x=170, y=360)
         Button_download_output.place_forget()
     elif input_type_var.get() == 1:  # "File" selected
@@ -140,11 +166,23 @@ def import_key():
         try:
             with open(file_path, "r", encoding="utf-8") as file:
                 key = file.read().strip()
-                Entry_id13.delete(0, END)
-                Entry_id13.insert(0, key)
+                Entry_id13.delete("1.0", "end")
+                Entry_id13.insert("1.0", key)
         except Exception as e:
             print("Failed to read key file:", e)
 
+def import_input():
+    file_path = filedialog.askopenfilename(
+        title="Import Key File", filetypes=[("Text files", "*.txt")]
+    )
+    if file_path:
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                data = file.read().strip()
+                Entry_id10.delete("1.0", "end")
+                Entry_id10.insert("1.0", data)
+        except Exception as e:
+            print("Failed to read input file:", e)
 
 def download_output_file():
     global output_file_data
@@ -288,26 +326,40 @@ RadioButton_id15 = customtkinter.CTkRadioButton(
 )
 RadioButton_id15.place(x=680, y=270)
 
-Entry_id10 = customtkinter.CTkEntry(
+Entry_id10 = customtkinter.CTkTextbox(
     master=window,
-    placeholder_text="Input Text",
-    placeholder_text_color="#686868",
     font=("Arial", 14),
     text_color="#131313",
     height=160,
-    width=600,
+    width=510,
     border_width=0,
     corner_radius=0,
     border_color="#000000",
     bg_color="#3e3e3e",
     fg_color="#fafafa",
+    wrap="word"
 )
-Entry_id10.place(x=170, y=80)
+Entry_id10.place(x=260, y=80)
 
-Entry_id13 = customtkinter.CTkEntry(
+Button_id20 = customtkinter.CTkButton(
     master=window,
-    placeholder_text="Input Key",
-    placeholder_text_color="#686868",
+    text="Import",
+    font=("Arial", 14),
+    text_color="#131313",
+    hover_color="#949494",
+    height=30,
+    width=50,
+    border_width=0,
+    corner_radius=15,
+    border_color="#000000",
+    bg_color="#3e3e3e",
+    fg_color="#fafafa",
+    command=import_input
+)
+Button_id20.place(x=170, y=80)
+
+Entry_id13 = customtkinter.CTkTextbox(
+    master=window,
     font=("Arial", 14),
     text_color="#000000",
     height=60,
@@ -317,6 +369,7 @@ Entry_id13 = customtkinter.CTkEntry(
     border_color="#000000",
     bg_color="#3e3e3e",
     fg_color="#fafafa",
+    wrap="word"
 )
 Entry_id13.place(x=260, y=270)
 
@@ -337,10 +390,8 @@ Button_id16 = customtkinter.CTkButton(
 )
 Button_id16.place(x=170, y=270)
 
-Entry_id18 = customtkinter.CTkEntry(
+Entry_id18 = customtkinter.CTkTextbox(
     master=window,
-    placeholder_text="Output Text",
-    placeholder_text_color="#686868",
     font=("Arial", 14),
     text_color="#131313",
     height=180,
@@ -350,6 +401,7 @@ Entry_id18 = customtkinter.CTkEntry(
     border_color="#000000",
     bg_color="#3e3e3e",
     fg_color="#fafafa",
+    wrap="word"
 )
 Entry_id18.place(x=170, y=360)
 
@@ -464,6 +516,85 @@ Button_download_output = customtkinter.CTkButton(
     fg_color="#fafafa",
     command=lambda: download_output_file()
 )
+
+"""
+For RSA Input
+"""
+Entry_id21 = customtkinter.CTkTextbox(
+    master=window,
+    font=("Arial", 14),
+    text_color="#000000",
+    height=30,
+    width=100,
+    border_width=0,
+    corner_radius=0,
+    border_color="#000000",
+    bg_color="#3e3e3e",
+    fg_color="#fafafa",
+    wrap="word"
+)
+
+Entry_id24 = customtkinter.CTkTextbox(
+    master=window,
+    font=("Arial", 14),
+    text_color="#000000",
+    height=30,
+    width=100,
+    border_width=0,
+    corner_radius=0,
+    border_color="#000000",
+    bg_color="#3e3e3e",
+    fg_color="#fafafa",
+    wrap="word"
+)
+
+Entry_id26 = customtkinter.CTkTextbox(
+    master=window,
+    font=("Arial", 14),
+    text_color="#000000",
+    height=30,
+    width=200,
+    border_width=0,
+    corner_radius=0,
+    border_color="#000000",
+    bg_color="#3e3e3e",
+    fg_color="#fafafa",
+    wrap="word"
+)
+
+Label_id22 = customtkinter.CTkLabel(
+    master=window,
+    text="p:",
+    font=("Courier New", 14),
+    text_color="#fafafa",
+    height=30,
+    width=30,
+    bg_color="#3e3e3e",
+    fg_color="#3e3e3e",
+)
+
+Label_id23 = customtkinter.CTkLabel(
+    master=window,
+    text="q:",
+    font=("Courier New", 14),
+    text_color="#fafafa",
+    height=30,
+    width=30,
+    bg_color="#3e3e3e",
+    fg_color="#3e3e3e",
+)
+
+Label_id25 = customtkinter.CTkLabel(
+    master=window,
+    text="d:",
+    font=("Courier New", 14),
+    text_color="#fafafa",
+    height=30,
+    width=30,
+    bg_color="#3e3e3e",
+    fg_color="#3e3e3e",
+)
+#Entry_id21.place(x=260, y=270)
 
 # Run the main loop
 window.mainloop()

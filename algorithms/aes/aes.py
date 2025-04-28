@@ -236,64 +236,65 @@ def decrypt_block(Nr, ciphertext, key):
 # Functions to call
 def aes_encrypt(plaintext, key):
     """
-    Parameters:
-        Nr (int)
-        plaintext (str/bytes)
-        key (str/bytes)
+    Encrypts the plaintext with AES-128 in ECB mode.
+
+    If plaintext is str ➔ output hex string.
+    If plaintext is bytes ➔ output bytes.
     """
-    print(type(plaintext))
+    input_was_str = False
+
     if isinstance(plaintext, str):
+        input_was_str = True
         plaintext = plaintext.encode('utf-8')
+
     if isinstance(key, str):
         key = key.encode('utf-8')
 
     padded = pad(plaintext)
 
-    # Hardcoded for now
-    Nr = 10
+    Nr = 10  # AES-128
 
     encrypted_blocks = []
     for block in split_blocks(padded):
         encrypted_blocks.append(encrypt_block(Nr, block, key))
 
     ciphertext = b''.join(encrypted_blocks)
-    # print(ciphertext.hex())
-    return ciphertext.hex()
 
-
-def aes_decrypt(ciphertext, key, input_bytes = False):
-    """
-    Parameters:
-        Nr (int)
-        ciphertext (string, in hex/bytes)
-        key (str/bytes)
-    """
-    print(type(ciphertext), ciphertext, input_bytes)
-    if isinstance(ciphertext, str):
-        binary_ciphertext = bytes.fromhex(ciphertext)
+    if input_was_str:
+        return ciphertext.hex()
     else:
-        binary_ciphertext = ciphertext
+        return ciphertext
+
+
+def aes_decrypt(ciphertext, key):
+    """
+    Decrypts the ciphertext with AES-128 in ECB mode.
+
+    If ciphertext is str (hex) ➔ decode it first.
+    Returns str if input was str, bytes if input was bytes.
+    """
+    input_was_str = False
+
+    if isinstance(ciphertext, str):
+        input_was_str = True
+        ciphertext = bytes.fromhex(ciphertext)
 
     if isinstance(key, str):
         key = key.encode('utf-8')
 
-    # Hardcoded for now
-    Nr = 10
+    Nr = 10  # AES-128
 
     decrypted_blocks = []
-    for block in split_blocks(binary_ciphertext):
+    for block in split_blocks(ciphertext):
         decrypted_blocks.append(decrypt_block(Nr, block, key))
 
     decrypted_padded = b''.join(decrypted_blocks)
     unpadded = unpad(decrypted_padded)
 
-    # print(unpadded.decode('utf-8'))
-    if input_bytes:
-        #print(unpadded.hex())
-        return unpadded.hex()
-    else:
+    if input_was_str:
         return unpadded.decode('utf-8')
-
+    else:
+        return unpadded
 
 
 def main():
