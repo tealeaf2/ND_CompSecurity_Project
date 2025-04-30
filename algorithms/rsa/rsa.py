@@ -13,11 +13,26 @@ def modinv(a, m):
     x0, x1 = x1 - q * x0, x0
   return x1 + m0 if x1 < 0 else x1
 
+def pad(data: bytes):
+    pad_len = 8 - (len(data) % 8)
+    return data + bytes([pad_len] * pad_len)
+  
+def unpad(data: bytes):
+    pad_len = data[-1]
+    return data[:-pad_len]
+
+def binary_to_bytes(binary_string):
+    return binary_string.to_bytes(len(binary_string) // 8, byteorder='big')
+
+def bytes_to_binary(byte_data):
+    return ''.join(format(byte, '08b') for byte in byte_data)
+  
 def is_prime(n):
   if n < 2: return False
   for i in range(2, int(n ** 0.5) + 1):
     if n % i == 0: return False
   return True
+
 def find_coprimes(number):
   coprimes = []
   for i in range(1, number + 1):
@@ -27,13 +42,31 @@ def find_coprimes(number):
       break
   return coprimes
 
-def rsa_encrypt(message, public_key):
-  e, n = public_key
-  return [pow(ord(char), e, n) for char in message]
-
+def rsa_encrypt(plaintext, public_key):
+    e, n = public_key
+    if isinstance(plaintext, str):
+        plaintext = plaintext.encode()
+        ciphertext = [pow(byte, e, n) for byte in plaintext]
+        return " ".join(map(str, ciphertext))
+    else:
+        ciphertext = bytes([pow(byte, e, n) for byte in plaintext])
+        return ciphertext
+    
 def rsa_decrypt(ciphertext, private_key):
-  d, n = private_key
-  return ''.join([chr(pow(char, d, n)) for char in ciphertext])
+    d, n = private_key
+    decode=False
+    if isinstance(ciphertext, str):
+        encrypted_bytes = list(map(int, ciphertext.split()))
+        decode=True
+    else:
+        encrypted_bytes = ciphertext
+
+    decrypted_bytes = [pow(byte, d, n) for byte in encrypted_bytes]
+    byte_result = bytes(decrypted_bytes)
+
+    return byte_result.decode() if decode else byte_result
+
+
 
 def main():
   try:
@@ -45,22 +78,20 @@ def main():
       raise ValueError("Both numbers must be prime.")
     if p == q:
       raise ValueError("p and q must be different.")
-    '''    
-    if p*q <=127:
-      raise ValueError("p*q must be greater than 127")
-    '''
-
+    
     n = p * q
+    if n<=127:
+      raise ValueError("Prime numbers are too small. The product must be at least 128")
     phi = (p - 1) * (q - 1)
 
     print(f"n = {n}, φ(n) = {phi}")
-    d = int(input(f"Enter your private key exponent d (must be coprime with φ(n))\nHere are some coprime numbers: {find_coprimes(phi)}\nInput: "))
+    e = int(input(f"Enter your private key exponent d (must be coprime with φ(n))\nHere are some coprime numbers: {find_coprimes(phi)}\nInput: "))
 
-    if gcd(d, phi) != 1:
-      raise ValueError(f"d = {d} is not coprime with φ(n) = {phi}. Try another d.")
+    if gcd(e, phi) != 1:
+      raise ValueError(f"e = {e} is not coprime with φ(n) = {phi}. Try another d.")
 
-    e = modinv(d, phi)
-    if e is None:
+    d = modinv(e, phi)
+    if d is None:
       raise ValueError("Could not compute modular inverse of d. Try a different value.")
 
     print(f"Public key: (e = {e}, n = {n})")

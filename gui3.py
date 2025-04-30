@@ -48,6 +48,10 @@ def process():
         if not is_prime(p) or not is_prime(q):
             messagebox.showwarning("Warning","p and q must both be prime")
         n=p*q
+        if input_type_var.get() == 0 and n<128:
+            messagebox.showwarning("Warning", "For safe text encryption and decryption, please make sure p*q>=128")
+        if input_type_var.get() == 1 and n>256:
+            messagebox.showwarning("Warning", "For safe file encryption and decryption, please make sure p*q<=256")
         phi = (p-1)*(q-1)    
         if gcd(e, phi) != 1:
             messagebox.showwarning("Warning",f"Selected private key must be coprime with phi ({phi})\n Examples: {" ".join(list(map(str,find_coprimes(phi))))}")
@@ -76,8 +80,7 @@ def process():
             result = aes_decrypt(data, key)
         elif algorithm == "RSA":
             d,n = key[1], key[2]
-            parsed_data = [int(i) for i in data.split()]
-            result = rsa_decrypt(parsed_data ,(d,n))
+            result = rsa_decrypt(data ,(d,n))
         else:
             result = "Failed to decrypt"
         
