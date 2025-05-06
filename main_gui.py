@@ -41,22 +41,32 @@ def process():
         return
     elif algorithm == "AES" and len(key) != 16:
         messagebox.showwarning("Warning", "Key must be 16 characters long to use AES algorithm.")
+        return
     elif algorithm == "RSA":
         if len(key.split())!=3:
             messagebox.showwarning("Warning", "Key must have 3 values to use RSA algorithm.")
+            return
         p, q, e = list(map(int, key.split(" ")))
         if not is_prime(p) or not is_prime(q):
             messagebox.showwarning("Warning","p and q must both be prime")
+            return
         n=p*q
         if input_type_var.get() == 0 and n<128:
             messagebox.showwarning("Warning", "For safe text encryption and decryption, please make sure p*q>=128")
-        if input_type_var.get() == 1 and n>256:
-            messagebox.showwarning("Warning", "For safe file encryption and decryption, please make sure p*q<=256")
+            return
+        elif input_type_var.get() == 1:
+            messagebox.showwarning("Warning", "RSA cannot do file encryption.")
+            return
+        
         phi = (p-1)*(q-1)    
         if gcd(e, phi) != 1:
             messagebox.showwarning("Warning",f"Selected private key must be coprime with phi ({phi})\n Examples: {" ".join(list(map(str,find_coprimes(phi))))}")
+            return
         d = modinv(e,phi)
         key = (e,d,n)
+    elif algorithm == "Vigenere" and input_type_var.get() == 1:
+        messagebox.showwarning("Warning", "Vigenere cannot do file encryption.")
+        return
 
     if operation_var.get() == 0:
         if algorithm == "Vigenere":
@@ -107,31 +117,13 @@ def set_active(buttons, selected_name):
             button.configure(fg_color="#292929")  # Inactive color
     selected_algorithm.set(selected_name)
 
-    if selected_name == "Vigenere":
+    if selected_name in ["Vigenere", "RSA"]:
         for widget in window.winfo_children():
             if widget == RadioButton_id9:
                 widget.place_forget() 
-    # elif selected_name == "RSA":
-    #     for widget in window.winfo_children():
-    #         if widget in [Entry_id13]:
-    #             widget.place_forget()
-
-    #     Entry_id21.place(x=290, y=270)
-    #     Entry_id24.place(x=430, y=270)
-    #     Entry_id26.place(x=290, y=310)
-
-    #     Label_id22.place(x=260, y=270)
-    #     Label_id23.place(x=400, y=270)
-    #     Label_id25.place(x=260, y=310)
     else:
         RadioButton_id9.place(x=350, y=30)
         Entry_id13.place(x=260, y=270)
-        # Entry_id21.place_forget()
-        # Entry_id24.place_forget()
-        # Entry_id26.place_forget()
-        # Label_id22.place_forget()
-        # Label_id23.place_forget()
-        # Label_id25.place_forget()
 
 
 def update_input_ui():
